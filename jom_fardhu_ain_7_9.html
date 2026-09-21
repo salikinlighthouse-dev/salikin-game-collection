@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>JOM FARDHU AIN 7–9</title>
+<style>
+:root{
+  --teal:#159a9c;--teal2:#dff7f5;--cream:#fffaf0;--pink:#ffe5ed;
+  --yellow:#fff0a8;--ink:#23404a;--green:#38a169;--red:#e85d75;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#e8fbf8,#fff8e9);color:var(--ink);min-height:100vh}
+button,input{font:inherit}
+.app{max-width:900px;margin:auto;padding:18px}
+.screen{display:none;min-height:calc(100vh - 36px);align-items:center;justify-content:center}
+.screen.active{display:flex}
+.card{width:100%;background:#fff;border-radius:28px;padding:28px;box-shadow:0 12px 35px #1c6b7020}
+.logo{display:inline-block;background:var(--teal2);color:var(--teal);padding:8px 14px;border-radius:999px;font-weight:800}
+h1{font-size:clamp(38px,8vw,72px);margin:15px 0 5px;line-height:.95}
+h2{font-size:34px;margin:8px 0 12px}
+.subtitle{font-size:20px;color:#577078}
+.homeHero{text-align:center}
+.mascot{font-size:76px;margin:12px}
+input{width:100%;padding:15px;border:2px solid #cce8e5;border-radius:15px;outline:none}
+label{display:block;font-weight:700;margin:18px 0 7px}
+.btn{border:0;border-radius:16px;padding:14px 20px;font-weight:800;cursor:pointer;background:var(--teal);color:white;box-shadow:0 5px 0 #087174;transition:.12s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #087174}
+.btn.secondary{background:#f2f7f7;color:var(--ink);box-shadow:none}
+.btn.small{padding:10px 14px;font-size:14px}
+.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.choice{border:2px solid #d7eceb;background:#fff;padding:16px;border-radius:17px;text-align:left;cursor:pointer;font-weight:700;color:var(--ink)}
+.choice:hover{border-color:var(--teal);background:#f2fffe}
+.choice.correct{background:#dcf8e8;border-color:var(--green)}
+.choice.wrong{background:#ffe4e8;border-color:var(--red)}
+.ageGrid,.catGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.age,.cat{padding:18px;border:2px solid #d7eceb;border-radius:18px;background:white;cursor:pointer;text-align:center;font-weight:800}
+.age.selected,.cat.selected{border-color:var(--teal);background:var(--teal2)}
+.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.pill{background:white;border-radius:999px;padding:9px 13px;font-weight:800;box-shadow:0 3px 10px #0000000b}
+.progress{height:12px;background:#e6eeee;border-radius:99px;overflow:hidden;margin:12px 0 20px}
+.progress>div{height:100%;background:var(--teal);width:0%;transition:.3s}
+.qbox{background:var(--cream);border-radius:22px;padding:24px}
+.qtype{font-size:13px;font-weight:800;color:var(--teal);text-transform:uppercase}
+.question{font-size:27px;font-weight:800;line-height:1.25;margin-top:8px}
+.feedback{min-height:28px;font-weight:800;margin-top:15px}
+.next{text-align:right;margin-top:8px}
+.result{text-align:center}
+.scoreCircle{width:190px;height:190px;border-radius:50%;background:var(--teal2);display:flex;align-items:center;justify-content:center;flex-direction:column;margin:20px auto}
+.scoreNum{font-size:54px;font-weight:900;color:var(--teal)}
+.stars{font-size:42px;letter-spacing:4px}
+.review{background:#f8fbfb;border-radius:18px;padding:15px;text-align:left;margin:16px 0}
+.hidden{display:none!important}
+@media(max-width:600px){
+ .app{padding:10px}.card{padding:20px;border-radius:22px}
+ .choices,.ageGrid,.catGrid{grid-template-columns:1fr}
+ .question{font-size:23px}
+ h1{font-size:48px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<section id="home" class="screen active">
+<div class="card homeHero">
+  <div class="logo">SALIKIN LIGHTHOUSE • DIGITAL GAME</div>
+  <div class="mascot">📖✨</div>
+  <h1>JOM<br>FARDHU AIN</h1>
+  <div class="subtitle">Belajar • Jawab • Amal</div>
+  <p>Permainan pendidikan Islam untuk kanak-kanak umur <b>7–9 tahun</b>.</p>
+  <label for="player">Nama Pemain</label>
+  <input id="player" maxlength="24" placeholder="Contoh: Aiman">
+  <label>Pilih Umur</label>
+  <div class="ageGrid" id="ages">
+    <button class="age selected" data-age="7">7 Tahun</button>
+    <button class="age" data-age="8">8 Tahun</button>
+    <button class="age" data-age="9">9 Tahun</button>
+  </div>
+  <label>Pilih Kategori</label>
+  <div class="catGrid" id="cats">
+    <button class="cat selected" data-cat="all">🌟 Semua</button>
+    <button class="cat" data-cat="rukun">🕌 Rukun</button>
+    <button class="cat" data-cat="wuduk">💧 Wuduk</button>
+    <button class="cat" data-cat="solat">🙏 Solat</button>
+    <button class="cat" data-cat="puasa">🌙 Puasa</button>
+    <button class="cat" data-cat="adab">💚 Adab</button>
+  </div>
+  <br>
+  <button class="btn" id="startBtn">MULA BERMAIN ▶</button>
+</div>
+</section>
+
+<section id="game" class="screen">
+<div class="card">
+  <div class="topbar">
+    <button class="btn small secondary" id="homeBtn">⌂ HOME</button>
+    <div class="stats">
+      <div class="pill">⭐ Skor: <span id="score">0</span></div>
+      <div class="pill">❤️ <span id="qNo">1</span>/<span id="totalQ">10</span></div>
+    </div>
+  </div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="qbox">
+    <div class="qtype" id="qtype"></div>
+    <div class="question" id="question"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="next"><button class="btn hidden" id="nextBtn">SOALAN SETERUSNYA →</button></div>
+  </div>
+</div>
+</section>
+
+<section id="result" class="screen">
+<div class="card result">
+  <div class="logo">TAHNIAH! 🎉</div>
+  <h2 id="resultTitle">Syabas!</h2>
+  <p id="resultPlayer"></p>
+  <div class="scoreCircle">
+    <div class="scoreNum" id="finalScore">0</div>
+    <div>/ 100 mata</div>
+  </div>
+  <div class="stars" id="stars">⭐⭐⭐</div>
+  <p id="resultMsg"></p>
+  <div class="review">
+    <b>Keputusan</b>
+    <p>Jawapan betul: <span id="correctCount"></span> / <span id="resultTotal"></span></p>
+    <p>Umur permainan: <span id="resultAge"></span> tahun</p>
+    <p>Kategori: <span id="resultCat"></span></p>
+  </div>
+  <button class="btn" id="againBtn">MAIN LAGI 🔄</button>
+  <button class="btn secondary" id="resultHomeBtn">⌂ HOME</button>
+</div>
+</section>
+</div>
+
+<script>
+const bank=[
+{cat:"rukun",type:"Pilih jawapan",q:"Berapakah jumlah Rukun Islam?",a:["3","5","6","7"],c:1,why:"Rukun Islam ada lima."},
+{cat:"rukun",type:"Pilih jawapan",q:"Antara berikut, yang manakah Rukun Iman?",a:["Solat lima waktu","Berpuasa Ramadan","Beriman kepada malaikat","Membayar zakat"],c:2,why:"Beriman kepada malaikat ialah salah satu Rukun Iman."},
+{cat:"rukun",type:"Situasi",q:"Aisyah mendapat wang simpanan dan mahu berkongsi dengan orang yang memerlukan. Amalan manakah yang berkaitan dengan Rukun Islam?",a:["Zakat","Tidur","Bermain","Bersukan"],c:0,why:"Zakat ialah salah satu Rukun Islam."},
+{cat:"rukun",type:"Pilih jawapan",q:"Rukun Islam yang pertama ialah...",a:["Solat","Syahadah","Puasa","Zakat"],c:1,why:"Syahadah ialah Rukun Islam yang pertama."},
+{cat:"wuduk",type:"Situasi",q:"Sebelum solat, Amir sedar tangannya terkena kotoran. Apakah yang patut dia lakukan?",a:["Biarkan sahaja","Bersihkan dahulu","Terus makan","Tidur"],c:1,why:"Kotoran perlu dibersihkan sebelum melakukan ibadah."},
+{cat:"wuduk",type:"Pilih jawapan",q:"Antara berikut, yang manakah dilakukan ketika berwuduk?",a:["Membasuh muka","Makan","Tidur","Berlari"],c:0,why:"Membasuh muka termasuk dalam wuduk."},
+{cat:"wuduk",type:"Situasi",q:"Sara mahu berwuduk tetapi menggunakan air terlalu banyak. Apakah sikap yang lebih baik?",a:["Gunakan air secara sederhana","Buka semua paip","Main dengan air","Biarkan air mengalir"],c:0,why:"Islam mengajar kita supaya tidak membazir."},
+{cat:"wuduk",type:"Betul atau Salah",q:"Selepas berwuduk, kita digalakkan menjaga wuduk sehingga selesai solat.",a:["Betul","Salah"],c:0,why:"Betul. Menjaga wuduk membantu kita bersedia untuk ibadah."},
+{cat:"solat",type:"Pilih jawapan",q:"Berapakah solat fardu dalam sehari semalam?",a:["3","4","5","6"],c:2,why:"Solat fardu ialah lima waktu sehari semalam."},
+{cat:"solat",type:"Situasi",q:"Hakim sedang bermain apabila masuk waktu solat. Apakah tindakan yang sepatutnya?",a:["Terus bermain","Tunaikan solat","Tidur","Sembunyikan sejadah"],c:1,why:"Solat fardu perlu ditunaikan pada waktunya."},
+{cat:"solat",type:"Pilih jawapan",q:"Apakah arah yang kita hadap ketika solat?",a:["Kiblat","Sekolah","Taman","Pasar"],c:0,why:"Umat Islam menghadap kiblat ketika solat."},
+{cat:"solat",type:"Situasi",q:"Ali terlupa membaca sesuatu dalam solat dan berasa tidak pasti. Apakah tindakan yang baik?",a:["Panik dan lari","Terus belajar dan bertanya kepada guru/ibu bapa","Ketawa","Berhenti belajar solat"],c:1,why:"Jika tidak pasti, bertanya kepada orang yang berilmu ialah tindakan yang baik."},
+{cat:"solat",type:"Betul atau Salah",q:"Solat boleh membantu kita mengingati Allah.",a:["Betul","Salah"],c:0,why:"Solat ialah ibadah yang mendekatkan kita kepada Allah."},
+{cat:"puasa",type:"Pilih jawapan",q:"Bulan yang diwajibkan umat Islam berpuasa ialah...",a:["Syawal","Ramadan","Muharam","Rejab"],c:1,why:"Puasa wajib dilaksanakan pada bulan Ramadan."},
+{cat:"puasa",type:"Situasi",q:"Fatimah sedang berpuasa. Dia melihat rakannya makan di sebelahnya. Apakah sikap yang baik?",a:["Mengejek rakannya","Bersabar dan menjaga puasanya","Marah","Membazir makanan"],c:1,why:"Puasa melatih kesabaran dan pengawalan diri."},
+{cat:"puasa",type:"Pilih jawapan",q:"Apakah nama makanan/minuman yang kita ambil sebelum mula berpuasa?",a:["Sahur","Iftar","Zakat","Wuduk"],c:0,why:"Sahur ialah waktu makan dan minum sebelum bermulanya puasa."},
+{cat:"puasa",type:"Situasi",q:"Apabila masuk waktu Maghrib dan tiba waktu berbuka, apakah yang boleh dilakukan?",a:["Berbuka puasa","Mula puasa","Terus tidur tanpa sebab","Marah"],c:0,why:"Apabila masuk waktu Maghrib, orang yang berpuasa boleh berbuka."},
+{cat:"adab",type:"Situasi",q:"Kawan kamu terjatuh di sekolah. Apakah tindakan paling baik?",a:["Ketawa","Tolong dan bertanya keadaannya","Lari","Ambil gambar untuk mengejek"],c:1,why:"Menolong orang yang memerlukan ialah akhlak yang baik."},
+{cat:"adab",type:"Pilih jawapan",q:"Apakah ucapan yang sesuai apabila kita menerima bantuan?",a:["Terima kasih","Pergi sana","Diam","Saya tak mahu"],c:0,why:"Mengucapkan terima kasih menunjukkan penghargaan."},
+{cat:"adab",type:"Situasi",q:"Ibu sedang bercakap dengan kamu. Apakah adab yang baik?",a:["Memotong percakapan","Mendengar dengan sopan","Menjerit","Bermain telefon tanpa peduli"],c:1,why:"Mendengar dengan sopan ialah adab yang baik terhadap ibu."},
+{cat:"adab",type:"Betul atau Salah",q:"Kita perlu bercakap dengan sopan walaupun tidak bersetuju dengan seseorang.",a:["Betul","Salah"],c:0,why:"Walaupun tidak bersetuju, kita tetap perlu bercakap dengan sopan."},
+{cat:"adab",type:"Situasi",q:"Kamu nampak sampah di ruang belajar. Apakah tindakan yang baik?",a:["Tendang sampah","Kutip dan buang ke tong sampah","Panggil orang lain sahaja","Tambah sampah"],c:1,why:"Menjaga kebersihan ialah sebahagian daripada adab yang baik."},
+{cat:"rukun",type:"Situasi",q:"Zaki belajar tentang enam Rukun Iman. Apakah contoh amalan yang menunjukkan dia beriman kepada Allah?",a:["Berusaha taat dan beribadah","Mengejek orang","Membazir","Bercakap kasar"],c:0,why:"Keimanan kepada Allah mendorong kita taat dan beribadah."},
+{cat:"rukun",type:"Pilih jawapan",q:"Berapakah jumlah Rukun Iman?",a:["4","5","6","7"],c:2,why:"Rukun Iman ada enam."},
+{cat:"wuduk",type:"Situasi",q:"Danish mahu solat tetapi dia tidak pasti sama ada wuduknya masih ada. Apakah pilihan paling selamat untuk belajar menjaga ibadah?",a:["Semak keadaan dan berwuduk semula jika perlu","Terus bermain","Sengaja abaikan","Marah kepada kawan"],c:0,why:"Jika perlu, ambil wuduk semula supaya lebih yakin bersedia untuk solat."},
+{cat:"solat",type:"Situasi",q:"Kamu sedang membaca buku apabila terdengar azan. Kamu mahu belajar mengurus masa. Apa yang sesuai?",a:["Tinggalkan semua tanggungjawab selamanya","Bersedia untuk solat dan sambung membaca selepas itu","Marah kerana terganggu","Sengaja melengah-lengahkan"],c:1,why:"Kita boleh mengurus masa supaya ibadah dan pembelajaran berjalan bersama."},
+{cat:"puasa",type:"Situasi",q:"Semasa Ramadan, adik kamu belum berpuasa kerana masih kecil. Apakah sikap kamu?",a:["Mengejek","Memahami dan memberi contoh yang baik","Memaksa","Marah"],c:1,why:"Kita patut berlemah lembut dan menjadi contoh yang baik."},
+{cat:"adab",type:"Situasi",q:"Kamu mendapat markah tinggi tetapi kawan kamu mendapat markah rendah. Apa yang patut kamu lakukan?",a:["Mengejek","Beri semangat dan bantu jika mampu","Sembunyikan buku","Cakap dia tidak pandai"],c:1,why:"Memberi semangat dan membantu orang lain ialah akhlak terpuji."},
+{cat:"solat",type:"Pilih jawapan",q:"Solat Subuh mempunyai berapa rakaat fardu?",a:["1","2","3","4"],c:1,why:"Solat Subuh mempunyai dua rakaat fardu."},
+{cat:"solat",type:"Pilih jawapan",q:"Solat Maghrib mempunyai berapa rakaat fardu?",a:["2","3","4","5"],c:1,why:"Solat Maghrib mempunyai tiga rakaat fardu."},
+{cat:"solat",type:"Pilih jawapan",q:"Solat Isyak mempunyai berapa rakaat fardu?",a:["2","3","4","5"],c:2,why:"Solat Isyak mempunyai empat rakaat fardu."}
+];
+
+let age=7,cat="all",questions=[],idx=0,score=0,correct=0,answered=false;
+
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function catName(x){return {all:"Semua Kategori",rukun:"Rukun",wuduk:"Wuduk",solat:"Solat",puasa:"Puasa",adab:"Adab"}[x]}
+document.querySelectorAll(".age").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".age").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");age=+b.dataset.age;
+});
+document.querySelectorAll(".cat").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".cat").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");cat=b.dataset.cat;
+});
+$("startBtn").onclick=()=>{
+ const name=$("player").value.trim()||"Pemain";
+ let pool=cat==="all"?bank:bank.filter(q=>q.cat===cat);
+ questions=shuffle(pool).slice(0,10);
+ if(questions.length<10) questions=shuffle(bank).slice(0,10);
+ idx=0;score=0;correct=0;answered=false;
+ $("score").textContent=0;$("totalQ").textContent=questions.length;
+ $("player").dataset.name=name;
+ show("game");render();
+};
+$("homeBtn").onclick=()=>{show("home")};
+function render(){
+ const q=questions[idx];answered=false;
+ $("qNo").textContent=idx+1;$("bar").style.width=((idx)/questions.length*100)+"%";
+ $("qtype").textContent=q.type+" • "+catName(q.cat);
+ $("question").textContent=q.q;$("feedback").textContent="";
+ $("nextBtn").classList.add("hidden");
+ const box=$("choices");box.innerHTML="";
+ q.a.forEach((ans,i)=>{
+   const b=document.createElement("button");b.className="choice";b.textContent=ans;
+   b.onclick=()=>answer(i,b);box.appendChild(b);
+ });
+}
+function answer(i,clicked){
+ if(answered)return;answered=true;
+ const q=questions[idx], all=document.querySelectorAll(".choice");
+ all.forEach((b,n)=>{b.disabled=true;if(n===q.c)b.classList.add("correct")});
+ if(i===q.c){score+=10;correct++;clicked.classList.add("correct");$("feedback").textContent="✅ Betul! +10 mata. "+q.why}
+ else{clicked.classList.add("wrong");$("feedback").textContent="💡 Belum tepat. "+q.why}
+ $("score").textContent=score;$("bar").style.width=(((idx+1)/questions.length)*100)+"%";
+ $("nextBtn").classList.remove("hidden");
+}
+$("nextBtn").onclick=()=>{
+ if(idx<questions.length-1){idx++;render()}else{finish()}
+};
+function finish(){
+ const pct=score/questions.length/10;
+ $("finalScore").textContent=score;
+ $("correctCount").textContent=correct;$("resultTotal").textContent=questions.length;
+ $("resultAge").textContent=age;$("resultCat").textContent=catName(cat);
+ $("resultPlayer").textContent="Pemain: "+($("player").dataset.name||"Pemain");
+ let stars=pct>=.8?"⭐⭐⭐":pct>=.5?"⭐⭐":"⭐";
+ $("stars").textContent=stars;
+ $("resultTitle").textContent=pct===1?"Hebat! Semua betul!":pct>=.8?"Syabas!":"Bagus! Teruskan belajar!";
+ $("resultMsg").textContent=pct===1?"Masya-Allah, prestasi yang sangat baik.":pct>=.8?"Kamu sudah menguasai banyak perkara. Cuba lagi untuk skor penuh!":"Jangan risau. Cuba lagi dan belajar satu demi satu.";
+ show("result");
+}
+$("againBtn").onclick=()=>{$("startBtn").click()};
+$("resultHomeBtn").onclick=()=>show("home");
+</script>
+</body>
+</html>

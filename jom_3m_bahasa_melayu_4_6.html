@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOM 3M Bahasa Melayu - Belajar. Bermain. Membesar.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 50% ,#fef9c3 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+        /* Custom animations & bounce effects */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        .btn-bouncy {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-bouncy:active {
+            transform: scale(0.92);
+        }
+        /* Custom scrollbar for friendly UI */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #38bdf8;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden flex flex-col min-h-screen">
+
+    <header id="app-header" class="hidden bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 px-4 py-3 flex items-center justify-between border-b border-teal-100">
+        <div class="flex items-center space-x-2">
+            <button onclick="router.goHome()" class="btn-bouncy bg-teal-100 hover:bg-teal-200 text-teal-800 font-bold px-3 py-2 rounded-2xl flex items-center shadow-sm text-sm sm:text-base">
+                🏠 <span class="hidden sm:inline ml-1">Utama</span>
+            </button>
+            <button id="back-btn" onclick="router.goBack()" class="btn-bouncy bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2 rounded-2xl flex items-center shadow-sm text-sm sm:text-base">
+                ⬅️ <span class="hidden sm:inline ml-1">Kembali</span>
+            </button>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div id="header-user-badge" class="bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-teal-700 flex items-center shadow-inner">
+                👤 <span id="badge-name" class="ml-1 font-bold">Kawan</span>
+            </div>
+            <button onclick="audioManager.toggleAudio()" id="audio-toggle-btn" class="btn-bouncy bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-2 rounded-2xl shadow-sm text-sm sm:text-base">
+                🔊 <span id="audio-status-text" class="hidden sm:inline">Bunyi: ON</span>
+            </button>
+        </div>
+    </header>
+
+    <main id="app-container" class="flex-grow flex flex-col items-center justify-center p-4 max-w-5xl mx-auto w-full">
+        <!-- Views will be dynamically injected here -->
+    </main>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-white rounded-3xl p-6 max-w-md w-full text-center shadow-2xl border-4 border-teal-300 transform scale-95 transition-all duration-300">
+            <div id="modal-icon" class="text-6xl mb-3">🎉</div>
+            <h3 id="modal-title" class="text-2xl font-bold text-teal-700 mb-2">TAHNIAH!</h3>
+            <p id="modal-message" class="text-gray-600 text-lg mb-6">Kamu hebat sekali!</p>
+            <div id="modal-buttons" class="flex justify-center space-x-3">
+                <button onclick="closeModal()" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg">Teruskan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SOUND SYNTHESIZER (Web Audio API) ---
+        class AudioManager {
+            constructor() {
+                this.enabled = true;
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            toggle() {
+                this.enabled = !this.enabled;
+                document.getElementById('audio-status-text').innerText = this.enabled ? 'Bunyi: ON' : 'Bunyi: OFF';
+                this.playClick();
+                return this.enabled;
+            }
+            playTone(freq, type, duration, delay = 0) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    setTimeout(() => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + duration);
+                    }, delay);
+                } catch(e) {}
+            }
+            playClick() {
+                this.playTone(600, 'sine', 0.08);
+            }
+            playCorrect() {
+                this.playTone(523.25, 'triangle', 0.15, 0); // C5
+                this.playTone(659.25, 'triangle', 0.15, 100); // E5
+                this.playTone(783.99, 'triangle', 0.25, 200); // G5
+            }
+            playWrong() {
+                this.playTone(300, 'sawtooth', 0.2, 0);
+                this.playTone(220, 'sawtooth', 0.3, 150);
+            }
+            speak(text) {
+                if (!this.enabled) return;
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ms-MY';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+        }
+        const audioManager = new AudioManager();
+
+        // --- OFFICIAL A-Z MALAYSIAN CONTENT BANK ---
+        const AZ_BANK = [
+            { letterUp: 'A', letterLow: 'a', word: 'AYAM', cat: 'Haiwan', image: '🐔', desc: 'Ayam berbunyi kukuruyuk di halaman rumah.' },
+            { letterUp: 'B', letterLow: 'b', word: 'BOLA', cat: 'Mainan', image: '⚽', desc: 'Bola sepak mainan kegemaran Ali.' },
+            { letterUp: 'C', letterLow: 'c', word: 'CERI', cat: 'Buah', image: '🍒', desc: 'Buah ceri merah manis dan sedap.' },
+            { letterUp: 'D', letterLow: 'd', word: 'DURIAN', cat: 'Buah', image: '🍈', desc: 'Durian raja buah yang harum.' },
+            { letterUp: 'E', letterLow: 'e', word: 'EPAL', cat: 'Buah', image: '🍎', desc: 'Epal hijau dan merah menyihatkan badan.' },
+            { letterUp: 'F', letterLow: 'f', word: 'FERI', cat: 'Kenderaan', image: '🚢', desc: 'Feri membawa penumpang melintasi laut.' },
+            { letterUp: 'G', letterLow: 'g', word: 'GAJAH', cat: 'Haiwan', image: '🐘', desc: 'Gajah haiwan besar berbelalai panjang.' },
+            { letterUp: 'H', letterLow: 'h', word: 'HARIMAU', cat: 'Haiwan', image: '🐅', desc: 'Harimau belang perkasa di hutan.' },
+            { letterUp: 'I', letterLow: 'i', word: 'IKAN', cat: 'Haiwan', image: '🐟', desc: 'Ikan berenang riang di dalam air.' },
+            { letterUp: 'J', letterLow: 'j', word: 'JAM', cat: 'Objek harian', image: '⏰', desc: 'Jam menunjukkan tanda waktu.' },
+            { letterUp: 'K', letterLow: 'k', word: 'KUCING', cat: 'Haiwan', image: '🐱', desc: 'Kucing comel berkata meow.' },
+            { letterUp: 'L', letterLow: 'l', word: 'LAMPU', cat: 'Objek harian', image: '💡', desc: 'Lampu menerangi malam yang gelap.' },
+            { letterUp: 'M', letterLow: 'm', word: 'MATAHARI', cat: 'Alam', image: '☀️', desc: 'Matahari terbit bersinar cerah.' },
+            { letterUp: 'N', letterLow: 'n', word: 'NENAS', cat: 'Buah', image: '🍍', desc: 'Nenas manis bermahkota daun.' },
+            { letterUp: 'O', letterLow: 'o', word: 'OREN', cat: 'Buah', image: '🍊', desc: 'Buah oren kaya dengan vitamin C.' },
+            { letterUp: 'P', letterLow: 'p', word: 'POKOK', cat: 'Alam', image: '🌳', desc: 'Pokok besar tempat burung bersarang.' },
+            { letterUp: 'Q', letterLow: 'q', word: 'QURAN', cat: 'Objek harian', image: '📖', desc: 'Quran kitab panduan hidup mulia.' },
+            { letterUp: 'R', letterLow: 'r', word: 'RUMAH', cat: 'Objek harian', image: '🏠', desc: 'Rumah tempat keluarga kita berteduh.' },
+            { letterUp: 'S', letterLow: 's', word: 'SUSU', cat: 'Makanan', image: '🥛', desc: 'Susu segar menyihatkan tulang.' },
+            { letterUp: 'T', letterLow: 't', word: 'TOPI', cat: 'Objek harian', image: '👒', desc: 'Topi melindungi kepala daripada panas.' },
+            { letterUp: 'U', letterLow: 'u', word: 'ULAR', cat: 'Haiwan', image: '🐍', desc: 'Ular menyusur tenang di atas tanah.' },
+            { letterUp: 'V', letterLow: 'v', word: 'VAN', cat: 'Kenderaan', image: '🚐', desc: 'Van sekolah membawa murid ke sekolah.' },
+            { letterUp: 'W', letterLow: 'w', word: 'WAU', cat: 'Mainan', image: '🪁', desc: 'Wau bulan terbang tinggi di langit.' },
+            { letterUp: 'X', letterLow: 'x', word: 'XILOFON', cat: 'Mainan', image: '🎹', desc: 'Xilofon alat muzik berbunyi merdu.' },
+            { letterUp: 'Y', letterLow: 'y', word: 'YOYO', cat: 'Mainan', image: '🪀', desc: 'Yoyo naik turun dengan pantas.' },
+            { letterUp: 'Z', letterLow: 'z', word: 'ZIRAFAH', cat: 'Haiwan', image: '🦒', desc: 'Zirafah berleher panjang tinggi.' }
+        ];
+
+        // --- STORIES BANK ---
+        const STORIES_BANK = [
+            {
+                id: 1,
+                title: "Ali dan Bola Merah",
+                cover: "⚽",
+                pages: [
+                    "Ali mempunyai sebiji bola merah yang sangat cantik.",
+                    "Ali bermain bola di halaman rumah bersama kawan baiknya.",
+                    "Tiba-tiba, bola itu melanting jauh ke dalam semak.",
+                    "Abu datang membantu Ali mencari bola tersebut.",
+                    "Akhirnya bola itu dijumpai! Mereka gembira bermain bersama semula."
+                ],
+                moral: "Sikap tolong-menolong amalan yang mulia.",
+                question: "Apakah warna bola Ali?",
+                options: ["Bola Merah", "Bola Biru"],
+                answer: 0
+            },
+            {
+                id: 2,
+                title: "Si Arnab yang Baik Hati",
+                cover: "🐇",
+                pages: [
+                    "Arnab tinggal di dalam sebuah hutan yang hijau dan tenang.",
+                    "Dia melihat seekor kura-kura berjalan perlahan membawa beban berat.",
+                    "Arnab segera datang menawarkan bantuan membawa bakul epal.",
+                    "Kura-kura mengucapkan terima kasih kepada Arnab yang berbudi bahasa.",
+                    "Mereka berkongsi makan epal bersama-sama di bawah pokok."
+                ],
+                moral: "Sentiasa berbudi bahasa dan suka membantu kawan.",
+                question: "Siapakah yang membantu kura-kura?",
+                options: ["Arnab", "Kucing"],
+                answer: 0
+            },
+            {
+                id: 3,
+                title: "Kucing Comel di Taman",
+                cover: "🐱",
+                pages: [
+                    "Seekor anak kucing comel berwarna oren berjalan di taman bunga.",
+                    "Anak kucing itu mengejar rama-rama yang berterbangan.",
+                    "Dia keletihan lalu tertidur di atas rumput yang lembut.",
+                    "Ibu kucing datang mengejutkan anaknya untuk pulang ke rumah.",
+                    "Mereka berjalan beriringan pulang dengan gembira."
+                ],
+                moral: "Sayangi haiwan peliharaan di sekeliling kita.",
+                question: "Haiwan apakah yang mengejar rama-rama?",
+                options: ["Kucing", "Ayam"],
+                answer: 0
+            },
+            {
+                id: 4,
+                title: "Aminah Belajar Berkongsi",
+                cover: "🎁",
+                pages: [
+                    "Aminah mendapat sekotak pensel warna baru daripada ibu.",
+                    "Siti datang ke rumah Aminah untuk melukis bersama.",
+                    "Mulanya Aminah kedekut hendak berkongsi pensel warna.",
+                    "Ibu menasihati Aminah agar bersikap murah hati.",
+                    "Aminah gembira berkongsi warna dan melukis bersama Siti."
+                ],
+                moral: "Berkongsi membawa kebahagiaan dan persahabatan.",
+                question: "Apakah yang dikongsi oleh Aminah?",
+                options: ["Pensel Warna", "Buku Cerita"],
+                answer: 0
+            },
+            {
+                id: 5,
+                title: "Hari Pertama ke Sekolah",
+                cover: "🏫",
+                pages: [
+                    "Hari ini adalah hari pertama Ali pergi ke tadika.",
+                    "Ali memakai uniform baru dan membawa beg galas biru.",
+                    "Cikgu Cempaka menyambut kedatangan Ali dengan senyuman manis.",
+                    "Ali berkenalan dengan rakan-rakan baru di dalam kelas.",
+                    "Ali berasa sangat teruja dan gembira di tadika."
+                ],
+                moral: "Sekolah tempat yang menyeronokkan untuk belajar.",
+                question: "Siapakah nama Cikgu di tadika?",
+                options: ["Cikgu Cempaka", "Cikgu Amin"],
+                answer: 0
+            },
+            {
+                id: 6,
+                title: "Burung Kecil dan Pokok Besar",
+                cover: "🐦",
+                pages: [
+                    "Seekor burung kecil membina sarangnya di atas pokok yang rimbun.",
+                    "Pokok besar memberikan perlindungan daripada panas dan hujan.",
+                    "Burung kecil menyanyi riang setiap pagi untuk menghiburkan pokok.",
+                    "Mereka hidup berkawan baik dan saling menyayangi.",
+                    "Alam ciptaan Tuhan amat indah apabila kita saling menjaga."
+                ],
+                moral: "Hargai alam sekitar dan makhluk ciptaan Tuhan.",
+                question: "Di manakah burung kecil membina sarang?",
+                options: ["Atas Pokok", "Dalam Air"],
+                answer: 0
+            }
+        ];
+
+        // --- APP STATE MANAGEMENT ---
+        class AppState {
+            constructor() {
+                this.load();
+            }
+            load() {
+                const data = JSON.parse(localStorage.getItem('jom3m_user_state')) || {
+                    username: '',
+                    score: 0,
+                    stars: 0,
+                    gamesPlayed: 0,
+                    completedGames: [],
+                    highestScore: 0,
+                    level: 1, // 1: 4yo, 2: 5yo, 3: 6yo
+                    timerOption: 0, // 0: Tanpa masa, 60, 90, 120
+                    gallery: [] // saved coloring drawings
+                };
+                this.username = data.username;
+                this.score = data.score;
+                this.stars = data.stars;
+                this.gamesPlayed = data.gamesPlayed;
+                this.completedGames = data.completedGames || [];
+                this.highestScore = data.highestScore;
+                this.level = data.level || 1;
+                this.timerOption = data.timerOption || 0;
+                this.gallery = data.gallery || [];
+            }
+            save() {
+                const data = {
+                    username: this.username,
+                    score: this.score,
+                    stars: this.stars,
+                    gamesPlayed: this.gamesPlayed,
+                    completedGames: this.completedGames,
+                    highestScore: this.highestScore,
+                    level: this.level,
+                    timerOption: this.timerOption,
+                    gallery: this.gallery
+                };
+                localStorage.setItem('jom3m_user_state', JSON.stringify(data));
+            }
+            addScore(pts) {
+                this.score += pts;
+                if (this.score > this.highestScore) {
+                    this.highestScore = this.score;
+                }
+                // Check bonus stars every 5 correct answers (approx 50 pts)
+                if (this.score > 0 && Math.floor(this.score / 50) > this.stars) {
+                    this.stars++;
+                    showModal('⭐', 'BINTANG BONUS!', 'Kamu mendapat 1 bintang baru kerana cemerlang!');
+                }
+                this.save();
+            }
+            resetSession() {
+                this.score = 0;
+                this.save();
+            }
+        }
+        const state = new AppState();
+
+        // --- ROUTER SYSTEM ---
+        class Router {
+            constructor() {
+                this.history = ['login'];
+                this.currentView = 'login';
+            }
+            navigate(viewName, params = {}) {
+                audioManager.playClick();
+                this.history.push(viewName);
+                this.currentView = viewName;
+                this.render(params);
+            }
+            goHome() {
+                if (!state.username) {
+                    this.navigate('login');
+                    return;
+                }
+                audioManager.playClick();
+                this.history = ['menu'];
+                this.currentView = 'menu';
+                this.render();
+            }
+            goBack() {
+                audioManager.playClick();
+                if (this.history.length > 1) {
+                    this.history.pop();
+                    this.currentView = this.history[this.history.length - 1];
+                    this.render();
+                } else {
+                    this.goHome();
+                }
+            }
+            render(params = {}) {
+                const header = document.getElementById('app-header');
+                const container = document.getElementById('app-container');
+                
+                if (this.currentView === 'login') {
+                    header.classList.add('hidden');
+                    container.innerHTML = renderLoginView();
+                } else {
+                    header.classList.remove('hidden');
+                    document.getElementById('badge-name').innerText = state.username || 'Kawan';
+                    
+                    switch(this.currentView) {
+                        case 'menu': container.innerHTML = renderMainMenuView(); break;
+                        case 'level': container.innerHTML = renderLevelView(); break;
+                        case 'gamelist': container.innerHTML = renderGameListView(); break;
+                        case 'timer': container.innerHTML = renderTimerView(params.gameType); break;
+                        case 'game': renderGameEngine(params.gameType, container); break;
+                        case 'flashcards': renderFlashCardsView(container); break;
+                        case 'stories': renderStoriesListView(container); break;
+                        case 'story_read': renderStoryReadView(container, params.storyId); break;
+                        case 'coloring': renderColoringStudio(container); break;
+                        case 'gallery': renderGalleryView(container); break;
+                        case 'progress': container.innerHTML = renderProgressView(); break;
+                        default: container.innerHTML = renderMainMenuView();
+                    }
+                }
+                window.scrollTo(0,0);
+            }
+        }
+        const router = new Router();
+
+        // --- MODAL UTILS ---
+        function showModal(icon, title, message, onOk = null) {
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            const btnContainer = document.getElementById('modal-buttons');
+            if (onOk) {
+                btnContainer.innerHTML = `<button id="modal-ok-btn" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg">Teruskan</button>`;
+                document.getElementById('modal-ok-btn').onclick = () => { closeModal(); onOk(); };
+            } else {
+                btnContainer.innerHTML = `<button onclick="closeModal()" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg">Teruskan</button>`;
+            }
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            audioManager.playCorrect();
+            if(window.confetti) {
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+        function closeModal() {
+            audioManager.playClick();
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        // --- VIEW 1: LOGIN (DAFTAR MASUK) ---
+        function renderLoginView() {
+            const returning = state.username ? `Hai, ${state.username}! Jom Bermain!` : '';
+            return `
+                <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border-4 border-teal-200 text-center animate-float mt-6">
+                    <div class="text-7xl mb-3">🦁🎒</div>
+                    <h1 class="text-3xl font-bold text-teal-700 mb-2">Selamat Datang ke JOM 3M Bahasa Melayu!</h1>
+                    <p class="text-teal-600 font-semibold mb-6">Belajar. Bermain. Membesar.</p>
+                    
+                    ${returning ? `<div class="bg-amber-100 text-amber-800 font-bold p-3 rounded-2xl mb-4 border border-amber-300">${returning}</div>` : ''}
+                    
+                    <div class="space-y-4">
+                        <input type="text" id="username-input" placeholder="Masukkan Nama Kamu..." value="${state.username}" class="w-full px-5 py-4 rounded-2xl border-2 border-teal-300 focus:border-teal-500 focus:outline-none text-center text-xl font-bold text-teal-800 placeholder-teal-300 bg-teal-50/50">
+                        <button onclick="handleLogin()" class="btn-bouncy w-full bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-500 hover:to-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg text-xl tracking-wide flex items-center justify-center space-x-2">
+                            <span>🎮 MULA BERMAIN</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        function handleLogin() {
+            const input = document.getElementById('username-input').value.trim();
+            if (!input) {
+                audioManager.playWrong();
+                alert('Sila masukkan nama kamu dahulu ya!');
+                return;
+            }
+            state.username = input;
+            state.save();
+            audioManager.playCorrect();
+            router.navigate('menu');
+        }
+
+        // --- VIEW 2: MAIN MENU (MENU UTAMA) ---
+        function renderMainMenuView() {
+            return `
+                <div class="w-full max-w-4xl text-center py-6">
+                    <div class="mb-8">
+                        <h1 class="text-3xl sm:text-4xl font-bold text-teal-700 mb-2">Hai, ${state.username}! 👋</h1>
+                        <p class="text-gray-600 text-lg">Pilih aktiviti kegemaran kamu hari ini.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4">
+                        <button onclick="router.navigate('level')" class="btn-bouncy bg-gradient-to-br from-teal-400 to-emerald-500 text-white p-6 rounded-3xl shadow-lg flex flex-col items-center justify-center space-y-3 transform hover:scale-105 border-b-6 border-teal-700">
+                            <span class="text-5xl">🎮</span>
+                            <span class="text-2xl font-bold">MULA BERMAIN</span>
+                            <span class="text-xs bg-white/20 px-3 py-1 rounded-full">Aktiviti & Kuiz</span>
+                        </button>
+
+                        <button onclick="router.navigate('flashcards')" class="btn-bouncy bg-gradient-to-br from-amber-300 to-yellow-400 text-amber-900 p-6 rounded-3xl shadow-lg flex flex-col items-center justify-center space-y-3 transform hover:scale-105 border-b-6 border-amber-600">
+                            <span class="text-5xl">📚</span>
+                            <span class="text-2xl font-bold">FLASH CARD A-Z</span>
+                            <span class="text-xs bg-black/10 px-3 py-1 rounded-full">Kenal Huruf & Sebutan</span>
+                        </button>
+
+                        <button onclick="router.navigate('stories')" class="btn-bouncy bg-gradient-to-br from-sky-400 to-blue-500 text-white p-6 rounded-3xl shadow-lg flex flex-col items-center justify-center space-y-3 transform hover:scale-105 border-b-6 border-sky-700">
+                            <span class="text-5xl">📖</span>
+                            <span class="text-2xl font-bold">KOLEKSI CERITA</span>
+                            <span class="text-xs bg-white/20 px-3 py-1 rounded-full">6 Cerita Teladan</span>
+                        </button>
+
+                        <button onclick="router.navigate('coloring')" class="btn-bouncy bg-gradient-to-br from-pink-400 to-rose-500 text-white p-6 rounded-3xl shadow-lg flex flex-col items-center justify-center space-y-3 transform hover:scale-105 border-b-6 border-rose-700">
+                            <span class="text-5xl">🎨</span>
+                            <span class="text-2xl font-bold">JOM MEWARNA</span>
+                            <span class="text-xs bg-white/20 px-3 py-1 rounded-full">Lukisan & Galeri</span>
+                        </button>
+
+                        <button onclick="router.navigate('progress')" class="btn-bouncy bg-gradient-to-br from-purple-400 to-indigo-500 text-white p-6 rounded-3xl shadow-lg flex flex-col items-center justify-center space-y-3 transform hover:scale-105 border-b-6 border-indigo-700 sm:col-span-2 md:col-span-1">
+                            <span class="text-5xl">⭐</span>
+                            <span class="text-2xl font-bold">PROGRES SAYA</span>
+                            <span class="text-xs bg-white/20 px-3 py-1 rounded-full">Markah & Bintang</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- VIEW 3: SELECT LEVEL (PILIH TAHAP) ---
+        function renderLevelView() {
+            return `
+                <div class="w-full max-w-3xl text-center py-4">
+                    <h2 class="text-3xl font-bold text-teal-700 mb-2">🌱 Pilih Tahap Kamu!</h2>
+                    <p class="text-gray-600 mb-8">Pilih tahap umur yang sesuai dengan kamu.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+                        <div onclick="selectLevel(1)" class="cursor-pointer btn-bouncy bg-white rounded-3xl p-6 shadow-md border-4 ${state.level === 1 ? 'border-teal-500 bg-teal-50/50' : 'border-gray-200'} hover:border-teal-400 flex flex-col items-center">
+                            <span class="text-5xl mb-3">🌱</span>
+                            <h3 class="text-xl font-bold text-teal-800">TAHAP 1</h3>
+                            <p class="text-sm font-semibold text-teal-600 mb-3">Umur 4 Tahun</p>
+                            <p class="text-xs text-gray-500 text-center">Kenal huruf asas dan padankan gambar mudah.</p>
+                            ${state.level === 1 ? '<span class="mt-4 bg-teal-500 text-white text-xs px-3 py-1 rounded-full font-bold">Pilihan Semasa</span>' : ''}
+                        </div>
+
+                        <div onclick="selectLevel(2)" class="cursor-pointer btn-bouncy bg-white rounded-3xl p-6 shadow-md border-4 ${state.level === 2 ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-200'} hover:border-emerald-400 flex flex-col items-center">
+                            <span class="text-5xl mb-3">🌿</span>
+                            <h3 class="text-xl font-bold text-emerald-800">TAHAP 2</h3>
+                            <p class="text-sm font-semibold text-emerald-600 mb-3">Umur 5 Tahun</p>
+                            <p class="text-xs text-gray-500 text-center">Kenal, pilih jawapan dan susun abjad.</p>
+                            ${state.level === 2 ? '<span class="mt-4 bg-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold">Pilihan Semasa</span>' : ''}
+                        </div>
+
+                        <div onclick="selectLevel(3)" class="cursor-pointer btn-bouncy bg-white rounded-3xl p-6 shadow-md border-4 ${state.level === 3 ? 'border-indigo-500 bg-indigo-50/50' : 'border-gray-200'} hover:border-indigo-400 flex flex-col items-center">
+                            <span class="text-5xl mb-3">🌳</span>
+                            <h3 class="text-xl font-bold text-indigo-800">TAHAP 3</h3>
+                            <p class="text-sm font-semibold text-indigo-600 mb-3">Umur 6 Tahun</p>
+                            <p class="text-xs text-gray-500 text-center">Baca perkataan, lengkapkan huruf dan fikir.</p>
+                            ${state.level === 3 ? '<span class="mt-4 bg-indigo-500 text-white text-xs px-3 py-1 rounded-full font-bold">Pilihan Semasa</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        function selectLevel(lvl) {
+            state.level = lvl;
+            state.save();
+            audioManager.playCorrect();
+            router.navigate('gamelist');
+        }
+
+        // --- VIEW 4: SELECT GAME / ACTIVITY ---
+        function renderGameListView() {
+            const games = [
+                { id: 'blank', title: 'ISI TEMPAT KOSONG', icon: '📝', desc: 'Lengkapkan huruf yang hilang pada perkataan.', color: 'from-amber-400 to-orange-400' },
+                { id: 'match_case', title: 'PADANAN HURUF BESAR & KECIL', icon: '🔠', desc: 'Padankan huruf besar dengan huruf kecil.', color: 'from-teal-400 to-cyan-500' },
+                { id: 'match_pic', title: 'PADANKAN HURUF DENGAN GAMBAR', icon: '🖼️', desc: 'Padankan huruf bersama gambar dan objek.', color: 'from-emerald-400 to-green-500' },
+                { id: 'order', title: 'SUSUN HURUF MENGIKUT URUTAN', icon: '🔤', desc: 'Cari huruf yang hilang dalam urutan abjad.', color: 'from-sky-400 to-blue-500' },
+                { id: 'quiz', title: 'PILIH JAWAPAN YANG BETUL', icon: '❓', desc: 'Jawab soalan bergambar dengan tepat.', color: 'from-purple-400 to-indigo-500' },
+                { id: 'dragdrop', title: 'DRAG AND DROP', icon: '🎯', desc: 'Seret huruf ke gambar yang betul.', color: 'from-pink-400 to-rose-500' }
+            ];
+
+            return `
+                <div class="w-full max-w-4xl text-center py-4">
+                    <h2 class="text-3xl font-bold text-teal-700 mb-1">Pilih Permainan Kamu!</h2>
+                    <p class="text-gray-600 mb-6">Tahap ${state.level} • Jom pilih permainan seronok.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-4">
+                        ${games.map(g => `
+                            <button onclick="router.navigate('timer', {gameType: '${g.id}'})" class="btn-bouncy bg-gradient-to-br ${g.color} text-white p-6 rounded-3xl shadow-lg flex flex-col items-center text-center space-y-3 transform hover:scale-105 border-b-6 border-black/10">
+                                <span class="text-5xl">${g.icon}</span>
+                                <span class="text-xl font-bold">${g.title}</span>
+                                <p class="text-xs opacity-90">${g.desc}</p>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- VIEW 5: SELECT TIMER ---
+        function renderTimerView(gameType) {
+            return `
+                <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border-4 border-teal-200 text-center">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-2">⏱️ Pilih Masa Bermain</h2>
+                    <p class="text-gray-600 mb-6">Kamu boleh pilih tanpa masa atau tetapan masa.</p>
+
+                    <div class="space-y-3">
+                        <button onclick="startGameWithOptions('${gameType}', 0)" class="btn-bouncy w-full bg-teal-100 hover:bg-teal-200 text-teal-800 font-bold py-4 rounded-2xl text-lg flex items-center justify-center space-x-2">
+                            <span>🕊️ TANPA MASA (Santai)</span>
+                        </button>
+                        <button onclick="startGameWithOptions('${gameType}', 60)" class="btn-bouncy w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-4 rounded-2xl text-lg flex items-center justify-center space-x-2">
+                            <span>⏱️ 60 SAAT</span>
+                        </button>
+                        <button onclick="startGameWithOptions('${gameType}', 90)" class="btn-bouncy w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold py-4 rounded-2xl text-lg flex items-center justify-center space-x-2">
+                            <span>⏱️ 90 SAAT</span>
+                        </button>
+                        <button onclick="startGameWithOptions('${gameType}', 120)" class="btn-bouncy w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold py-4 rounded-2xl text-lg flex items-center justify-center space-x-2">
+                            <span>⏱️ 120 SAAT</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        function startGameWithOptions(gameType, seconds) {
+            state.timerOption = seconds;
+            state.resetSession();
+            router.navigate('game', { gameType });
+        }
+
+        // --- GAME ENGINE ---
+        function renderGameEngine(gameType, container) {
+            state.gamesPlayed++;
+            state.save();
+
+            let currentQuestionIndex = 0;
+            let score = 0;
+            let wrongAttempts = 0;
+            let questions = generateQuestions(gameType);
+            let timerInterval = null;
+            let timeLeft = state.timerOption;
+
+            function renderQ() {
+                if (currentQuestionIndex >= questions.length) {
+                    if (timerInterval) clearInterval(timerInterval);
+                    showModal('🏆', 'TAHNIAH, HEBAT!', `Kamu telah berjaya menyiapkan permainan ini dengan ${score} markah!`, () => {
+                        router.navigate('gamelist');
+                    });
+                    return;
+                }
+
+                const q = questions[currentQuestionIndex];
+                const progressPct = ((currentQuestionIndex) / questions.length) * 100;
+
+                container.innerHTML = `
+                    <div class="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-teal-200 mb-6">
+                        <!-- Top HUD -->
+                        <div class="flex items-center justify-between mb-4 bg-teal-50 px-4 py-2 rounded-2xl">
+                            <span class="font-bold text-teal-700 text-sm sm:text-base">Tahap ${state.level} • Soalan ${currentQuestionIndex + 1}/${questions.length}</span>
+                            <div class="flex items-center space-x-4">
+                                <span class="font-bold text-amber-600 text-sm sm:text-base">⭐ ${state.stars}</span>
+                                <span class="font-bold text-emerald-600 text-sm sm:text-base">🏆 ${score} Markah</span>
+                                ${state.timerOption > 0 ? `<span id="timer-display" class="font-bold text-rose-600 text-sm sm:text-base">⏰ ${timeLeft}s</span>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-gray-200 h-3 rounded-full mb-6 overflow-hidden">
+                            <div class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>
+                        </div>
+
+                        <!-- Question Prompt -->
+                        <div class="text-center mb-6">
+                            <span class="text-xs uppercase bg-teal-100 text-teal-800 px-3 py-1 rounded-full font-bold">${q.category || 'Aktiviti'}</span>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-teal-900 mt-2">${q.title}</h3>
+                            <p class="text-gray-500 text-sm mt-1">${q.instruction}</p>
+                        </div>
+
+                        <!-- Main Question Visual Area -->
+                        <div class="flex flex-col items-center justify-center mb-6">
+                            ${q.visualHTML}
+                        </div>
+
+                        <!-- Answer Choices -->
+                        <div id="choices-container" class="grid grid-cols-2 gap-4">
+                            ${q.choices.map((c, idx) => `
+                                <button onclick="window.checkGameAnswer(${idx})" class="btn-bouncy choice-btn bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 border-3 border-teal-300 text-teal-900 font-bold py-4 px-6 rounded-2xl shadow-md text-xl flex items-center justify-center space-x-2">
+                                    <span>${c}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                if (state.timerOption > 0 && !timerInterval) {
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        const tEl = document.getElementById('timer-display');
+                        if (tEl) tEl.innerText = `⏰ ${timeLeft}s`;
+                        if (timeLeft <= 0) {
+                            clearInterval(timerInterval);
+                            showModal('⏰', 'Masa Tamat!', 'Tahniah kerana mencuba dengan baik!', () => router.navigate('gamelist'));
+                        }
+                    }, 1000);
+                }
+            }
+
+            window.checkGameAnswer = (selectedIndex) => {
+                const q = questions[currentQuestionIndex];
+                const isCorrect = selectedIndex === q.correctIndex;
+
+                if (isCorrect) {
+                    audioManager.playCorrect();
+                    score += 10;
+                    state.addScore(10);
+                    wrongAttempts = 0;
+
+                    const randomMsgs = ["TAHNIAH!", "PANDAI!", "BETUL!", "HEBAT!"];
+                    const randomMsg = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
+
+                    if(window.confetti) {
+                        confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+                    }
+
+                    showModal('🎉', randomMsg, 'Jawapan kamu tepat sekali!', () => {
+                        currentQuestionIndex++;
+                        renderQ();
+                    });
+                } else {
+                    wrongAttempts++;
+                    audioManager.playWrong();
+                    if (wrongAttempts >= 2) {
+                        showModal('💡', 'Jawapan yang betul ialah...', `Pilihan yang tepat ialah: "${q.choices[q.correctIndex]}"`, () => {
+                            wrongAttempts = 0;
+                            currentQuestionIndex++;
+                            renderQ();
+                        });
+                    } else {
+                        showModal('🤔', 'Cuba Lagi!', 'Jom cuba sekali lagi dengan teliti.');
+                    }
+                }
+            };
+
+            renderQ();
+        }
+
+        // --- QUESTION GENERATOR ENGINE ---
+        function generateQuestions(type) {
+            let list = [];
+            // Shuffle AZ_BANK for variety
+            const shuffled = [...AZ_BANK].sort(() => 0.5 - Math.random());
+
+            shuffled.forEach((item, index) => {
+                if (index >= 6) return; // 6 questions per session
+
+                if (type === 'blank') {
+                    // Fill in the blank
+                    let word = item.word;
+                    let blankIdx = Math.floor(Math.random() * word.length);
+                    let missingChar = word[blankIdx];
+                    let displayWord = word.split('').map((char, i) => i === blankIdx ? '_' : char).join(' ');
+
+                    let wrongChar1 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                    while(wrongChar1 === missingChar) wrongChar1 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                    let wrongChar2 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                    while(wrongChar2 === missingChar || wrongChar2 === wrongChar1) wrongChar2 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+
+                    let choices = [missingChar, wrongChar1, wrongChar2].sort(() => 0.5 - Math.random());
+                    let correctIndex = choices.indexOf(missingChar);
+
+                    list.fromCharCode = true; // placeholder
+                    list.push({
+                        category: 'Isi Tempat Kosong',
+                        title: displayWord,
+                        instruction: `Apakah huruf yang hilang untuk ${word}?`,
+                        visualHTML: `<div class="text-7xl mb-2">${item.image}</div><div class="text-lg font-bold text-teal-700">${word}</div>`,
+                        choices,
+                        correctIndex
+                    });
+                } else if (type === 'match_case') {
+                    let isUpToLow = Math.random() > 0.5;
+                    let target = isUpToLow ? item.letterUp : item.letterLow;
+                    let correct = isUpToLow ? item.letterLow : item.letterUp;
+                    
+                    let wrongItem1 = shuffled[(index + 1) % shuffled.length];
+                    let wrongItem2 = shuffled[(index + 2) % shuffled.length];
+                    let wrong1 = isUpToLow ? wrongItem1.letterLow : wrongItem1.letterUp;
+                    let wrong2 = isUpToLow ? wrongItem2.letterLow : wrongItem2.letterUp;
+
+                    let choices = [correct, wrong1, wrong2].sort(() => 0.5 - Math.random());
+                    let correctIndex = choices.indexOf(correct);
+
+                    list.push({
+                        category: 'Padanan Huruf',
+                        title: `Pasangan bagi "${target}"?`,
+                        instruction: 'Pilih pasangan huruf besar atau kecil yang betul.',
+                        visualHTML: `<div class="text-8xl bg-teal-50 px-8 py-4 rounded-3xl border-4 border-teal-200 text-teal-800 shadow-inner">${target}</div>`,
+                        choices,
+                        correctIndex
+                    });
+                } else if (type === 'match_pic' || type === 'quiz') {
+                    let correctWord = item.word;
+                    let wrong1 = shuffled[(index + 1) % shuffled.length].word;
+                    let wrong2 = shuffled[(index + 2) % shuffled.length].word;
+                    let choices = [correctWord, wrong1, wrong2].sort(() => 0.5 - Math.random());
+                    let correctIndex = choices.indexOf(correctWord);
+
+                    list.push({
+                        category: type === 'match_pic' ? 'Padankan Gambar' : 'Pilihan Jawapan',
+                        title: type === 'match_pic' ? `Apakah perkataan bagi gambar ini?` : `Gambar apakah ini?`,
+                        instruction: `Pilih jawapan yang paling tepat.`,
+                        visualHTML: `<div class="text-8xl mb-3 bg-amber-50 p-6 rounded-3xl border-4 border-amber-200 shadow-inner">${item.image}</div><div class="text-teal-700 font-bold">Huruf Mula: ${item.letterUp}</div>`,
+                        choices,
+                        correctIndex
+                    });
+                } else if (type === 'order') {
+                    // Order letters (Find missing letter in sequence A B _ D)
+                    let baseIdx = index % 20;
+                    let l1 = AZ_BANK[baseIdx].letterUp;
+                    let l2 = AZ_BANK[baseIdx+1].letterUp;
+                    let l3 = AZ_BANK[baseIdx+2].letterUp;
+                    let l4 = AZ_BANK[baseIdx+3].letterUp;
+
+                    let missingSlot = Math.floor(Math.random() * 4);
+                    let correctChar = [l1, l2, l3, l4][missingSlot];
+                    let seqDisplay = [l1, l2, l3, l4].map((c, i) => i === missingSlot ? '❓' : c).join('  ');
+
+                    let wrong1 = String.fromCharCode(65 + ((baseIdx + 5) % 26));
+                    let wrong2 = String.fromCharCode(65 + ((baseIdx + 9) % 26));
+                    let choices = [correctChar, wrong1, wrong2].sort(() => 0.5 - Math.random());
+                    let correctIndex = choices.indexOf(correctChar);
+
+                    list.push({
+                        category: 'Susun Urutan Abjad',
+                        title: seqDisplay,
+                        instruction: 'Apakah huruf yang sepatutnya berada di tempat ❓?',
+                        visualHTML: `<div class="text-5xl font-bold tracking-widest text-teal-800 bg-teal-50 p-6 rounded-3xl border-4 border-teal-200">${seqDisplay}</div>`,
+                        choices,
+                        correctIndex
+                    });
+                } else {
+                    // Drag and Drop simulation quiz
+                    let correctWord = item.word;
+                    let wrong1 = shuffled[(index + 3) % shuffled.length].word;
+                    let choices = [correctWord, wrong1].sort(() => 0.5 - Math.random());
+                    let correctIndex = choices.indexOf(correctWord);
+
+                    list.push({
+                        category: 'Seret dan Padan (Drag & Drop)',
+                        title: `Padankan huruf [${item.letterUp}] ke objek yang betul:`,
+                        instruction: 'Pilih padanan gambar yang tepat.',
+                        visualHTML: `<div class="text-7xl font-bold text-teal-700 bg-teal-50 px-8 py-4 rounded-3xl border-4 border-teal-200 mb-3">${item.letterUp} ➔ ❓</div>`,
+                        choices: [item.image + ' ' + correctWord, shuffled[(index+2)%shuffled.length].image + ' ' + wrong1],
+                        correctIndex: 0
+                    });
+                }
+            });
+            return list;
+        }
+
+        // --- VIEW 8: FLASH CARD A-Z ---
+        let currentFlashIndex = 0;
+        function renderFlashCardsView(container) {
+            const item = AZ_BANK[currentFlashIndex];
+            container.innerHTML = `
+                <div class="w-full max-w-xl text-center py-4">
+                    <h2 class="text-3xl font-bold text-teal-700 mb-1">📚 Flash Card A-Z</h2>
+                    <p class="text-gray-600 mb-6">Kenal huruf, perkataan dan sebutan rasmi.</p>
+
+                    <!-- Card Body -->
+                    <div class="bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-300 relative mb-6">
+                        <div class="absolute top-4 left-4 bg-teal-100 text-teal-800 font-bold px-3 py-1 rounded-full text-sm">
+                            ${currentFlashIndex + 1} / 26
+                        </div>
+                        <div class="absolute top-4 right-4 text-3xl">
+                            ${item.image}
+                        </div>
+
+                        <div class="flex justify-center items-center space-x-6 my-6">
+                            <span class="text-7xl sm:text-8xl font-bold text-teal-700">${item.letterUp}</span>
+                            <span class="text-7xl sm:text-8xl font-bold text-emerald-600">${item.letterLow}</span>
+                        </div>
+
+                        <div class="text-3xl sm:text-4xl font-bold text-teal-900 mb-2 uppercase tracking-wide">
+                            ${item.word}
+                        </div>
+                        <p class="text-gray-500 text-sm sm:text-base mb-6">${item.desc}</p>
+
+                        <button onclick="audioManager.speak('${item.letterUp} untuk ${item.word}')" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg text-lg flex items-center justify-center mx-auto space-x-2">
+                            <span>🔊 DENGAR SEBUTAN</span>
+                        </button>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex justify-between items-center px-2">
+                        <button onclick="prevFlashCard()" class="btn-bouncy bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-3 px-6 rounded-2xl shadow-md text-lg">
+                            ⬅️ SEBELUM
+                        </button>
+                        <button onclick="nextFlashCard()" class="btn-bouncy bg-teal-100 hover:bg-teal-200 text-teal-900 font-bold py-3 px-6 rounded-2xl shadow-md text-lg">
+                            SETERUSNYA ➡️
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Auto speak on load
+            audioManager.speak(`${item.letterUp} untuk ${item.word}`);
+        }
+        function nextFlashCard() {
+            audioManager.playClick();
+            currentFlashIndex = (currentFlashIndex + 1) % AZ_BANK.length;
+            renderFlashCardsView(document.getElementById('app-container'));
+        }
+        function prevFlashCard() {
+            audioManager.playClick();
+            currentFlashIndex = (currentFlashIndex - 1 + AZ_BANK.length) % AZ_BANK.length;
+            renderFlashCardsView(document.getElementById('app-container'));
+        }
+
+        // --- VIEW 9: JOM MEWARNA (DIGITAL COLORING BOOK) ---
+        function renderColoringStudio(container) {
+            const templates = [
+                { name: 'Ayam', icon: '🐔' },
+                { name: 'Bola', icon: '⚽' },
+                { name: 'Ceri', icon: '🍒' },
+                { name: 'Epal', icon: '🍎' },
+                { name: 'Kucing', icon: '🐱' },
+                { name: 'Bunga', icon: '🌸' },
+                { name: 'Rumah', icon: '🏠' },
+                { name: 'Pokok', icon: '🌳' },
+                { name: 'Pelangi', icon: '🌈' },
+                { name: 'Kereta', icon: '🚗' }
+            ];
+
+            container.innerHTML = `
+                <div class="w-full max-w-4xl py-4">
+                    <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-teal-700">🎨 Jom Mewarna Digital</h2>
+                            <p class="text-gray-600 text-sm">Pilih gambar, warnakan dengan palet warna ceria dan simpan hasil karya kamu!</p>
+                        </div>
+                        <button onclick="router.navigate('gallery')" class="btn-bouncy mt-2 sm:mt-0 bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold px-4 py-2 rounded-2xl shadow-sm text-sm">
+                            🖼️ Galeri Hasil Saya (${state.gallery.length})
+                        </button>
+                    </div>
+
+                    <!-- Template Picker -->
+                    <div class="flex overflow-x-auto space-x-3 pb-3 mb-4">
+                        ${templates.map((t, idx) => `
+                            <button onclick="loadColoringTemplate(${idx})" class="btn-bouncy flex-shrink-0 bg-white border-2 border-teal-300 hover:border-teal-500 px-4 py-2 rounded-2xl text-center font-bold text-teal-800 shadow-sm flex items-center space-x-2">
+                                <span class="text-xl">${t.icon}</span>
+                                <span>${t.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <!-- Canvas Workspace -->
+                    <div class="bg-white rounded-3xl p-6 shadow-xl border-4 border-teal-200 flex flex-col items-center">
+                        <div class="relative border-4 border-dashed border-teal-300 rounded-2xl overflow-hidden bg-white mb-4 shadow-inner">
+                            <canvas id="coloring-canvas" width="400" height="350" class="cursor-crosshair touch-none"></canvas>
+                        </div>
+
+                        <!-- Color Palette & Tools -->
+                        <div class="flex flex-wrap justify-center gap-3 mb-4">
+                            ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7', '#ec4899', '#78716c', '#ffffff', '#000000'].map(c => `
+                                <button onclick="selectColor('${c}')" class="w-10 h-10 rounded-full shadow-md border-2 border-white transform hover:scale-110 transition-transform" style="background-color: ${c};"></button>
+                            `).join('')}
+                        </div>
+
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <button onclick="clearCanvas()" class="btn-bouncy bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold px-4 py-2 rounded-2xl shadow-sm">
+                                🗑️ Padam Semua
+                            </button>
+                            <button onclick="saveArtwork()" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-2 rounded-2xl shadow-lg">
+                                💾 Simpan Karya
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            initCanvasEngine(templates[0].name);
+        }
+
+        let canvasCtx = null;
+        let currentColor = '#ef4444';
+        let isDrawing = false;
+
+        function initCanvasEngine(templateName) {
+            const canvas = document.getElementById('coloring-canvas');
+            if (!canvas) return;
+            canvasCtx = canvas.getContext('2d');
+            redrawCanvasTemplate(templateName);
+
+            let lastX = 0;
+            let lastY = 0;
+
+            function drawStart(e) {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                lastX = clientX - rect.left;
+                lastY = clientY - rect.top;
+            }
+
+            function drawMove(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const currentX = clientX - rect.left;
+                const currentY = clientY - rect.top;
+
+                canvasCtx.strokeStyle = currentColor;
+                canvasCtx.lineWidth = 14;
+                canvasCtx.lineCap = 'round';
+                canvasCtx.lineJoin = 'round';
+
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(lastX, lastY);
+                canvasCtx.lineTo(currentX, currentY);
+                canvasCtx.stroke();
+
+                lastX = currentX;
+                lastY = currentY;
+            }
+
+            function drawEnd() {
+                isDrawing = false;
+            }
+
+            canvas.onmousedown = drawStart;
+            canvas.onmousemove = drawMove;
+            canvas.onmouseup = drawEnd;
+            canvas.onmouseleave = drawEnd;
+
+            canvas.ontouchstart = drawStart;
+            canvas.ontouchmove = drawMove;
+            canvas.ontouchend = drawEnd;
+        }
+
+        function redrawCanvasTemplate(name) {
+            if (!canvasCtx) return;
+            canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.fillRect(0, 0, 400, 350);
+
+            // Draw template outline sketch
+            canvasCtx.strokeStyle = '#1e293b';
+            canvasCtx.lineWidth = 4;
+            canvasCtx.font = '100px sans-serif';
+            canvasCtx.textAlign = 'center';
+            canvasCtx.textBaseline = 'middle';
+
+            let emoji = '🐔';
+            if (name === 'Bola') emoji = '⚽';
+            else if (name === 'Ceri') emoji = '🍒';
+            else if (name === 'Epal') emoji = '🍎';
+            else if (name === 'Kucing') emoji = '🐱';
+            else if (name === 'Bunga') emoji = '🌸';
+            else if (name === 'Rumah') emoji = '🏠';
+            else if (name === 'Pokok') emoji = '🌳';
+            else if (name === 'Pelangi') emoji = '🌈';
+            else if (name === 'Kereta') emoji = '🚗';
+
+            canvasCtx.fillText(emoji, 200, 160);
+
+            canvasCtx.font = '22px Fredoka, sans-serif';
+            canvasCtx.fillStyle = '#0f766e';
+            canvasCtx.fillText(`Karya: ${name}`, 200, 310);
+        }
+
+        function selectColor(color) {
+            audioManager.playClick();
+            currentColor = color;
+        }
+
+        function clearCanvas() {
+            audioManager.playClick();
+            const canvas = document.getElementById('coloring-canvas');
+            if (canvas) {
+                redrawCanvasTemplate('Ayam');
+            }
+        }
+
+        function saveArtwork() {
+            audioManager.playCorrect();
+            const canvas = document.getElementById('coloring-canvas');
+            if (!canvas) return;
+            const dataURL = canvas.toDataURL('image/png');
+            state.gallery.push({ id: Date.now(), title: 'Karya Warnaku', image: dataURL, date: new Date().toLocaleDateString() });
+            state.save();
+            showModal('💾', 'BERJAYA DISIMPAN!', 'Hasil karya seni kamu telah disimpan ke dalam Galeri Saya!');
+        }
+
+        function loadColoringTemplate(idx) {
+            audioManager.playClick();
+            const templates = ['Ayam', 'Bola', 'Ceri', 'Epal', 'Kucing', 'Bunga', 'Rumah', 'Pokok', 'Pelangi', 'Kereta'];
+            redrawCanvasTemplate(templates[idx]);
+        }
+
+        function renderGalleryView(container) {
+            container.innerHTML = `
+                <div class="w-full max-w-4xl py-4">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold text-teal-700">🖼️ Galeri Hasil Saya</h2>
+                        <button onclick="router.navigate('coloring')" class="btn-bouncy bg-teal-100 hover:bg-teal-200 text-teal-800 font-bold px-4 py-2 rounded-2xl text-sm">
+                            🎨 Kembali Mewarna
+                        </button>
+                    </div>
+
+                    ${state.gallery.length === 0 ? `
+                        <div class="bg-white rounded-3xl p-12 text-center shadow-md border-4 border-teal-200">
+                            <span class="text-6xl mb-3 block">🎨</span>
+                            <h3 class="text-xl font-bold text-gray-700 mb-1">Belum ada karya disimpan</h3>
+                            <p class="text-gray-500 text-sm">Jom warnakan gambar dan simpan karya kamu di sini!</p>
+                        </div>
+                    ` : `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            ${state.gallery.map(item => `
+                                <div class="bg-white rounded-3xl p-4 shadow-lg border-4 border-teal-200 text-center flex flex-col items-center">
+                                    <img src="${item.image}" class="rounded-2xl border-2 border-gray-200 mb-3 shadow-inner w-full h-48 object-cover">
+                                    <p class="font-bold text-teal-800 text-sm mb-2">${item.title} (${item.date})</p>
+                                    <a href="${item.image}" download="karya_jom3m.png" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-xl text-xs w-full block">
+                                        📥 Muat Turun Gambar
+                                    </a>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        // --- VIEW 10: KOLEKSI CERITA (STORY COLLECTION) ---
+        function renderStoriesListView(container) {
+            container.innerHTML = `
+                <div class="w-full max-w-4xl py-4">
+                    <h2 class="text-3xl font-bold text-teal-700 mb-1">📖 Koleksi Cerita Teladan</h2>
+                    <p class="text-gray-600 mb-6">6 Cerita pendek bermoral untuk anak-anak cerdik.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${STORIES_BANK.map(s => `
+                            <div onclick="router.navigate('story_read', {storyId: ${s.id}})" class="cursor-pointer btn-bouncy bg-white rounded-3xl p-6 shadow-lg border-4 border-teal-200 hover:border-teal-400 flex flex-col items-center text-center">
+                                <span class="text-6xl mb-3">${s.cover}</span>
+                                <h3 class="text-xl font-bold text-teal-900 mb-2">${s.title}</h3>
+                                <p class="text-xs text-gray-500 mb-4">${s.moral}</p>
+                                <span class="bg-teal-100 text-teal-800 font-bold px-4 py-2 rounded-2xl text-xs">Mula Membaca 📖</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStoryReadView(container, storyId) {
+            const story = STORIES_BANK.find(s => s.id === storyId);
+            let currentPage = 0;
+            let viewingQuiz = false;
+
+            function renderPageContent() {
+                if (viewingQuiz) {
+                    container.innerHTML = `
+                        <div class="w-full max-w-xl bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-300 text-center">
+                            <span class="text-5xl mb-3 block">❓</span>
+                            <h3 class="text-2xl font-bold text-teal-800 mb-2">Soalan Pemahaman</h3>
+                            <p class="text-lg text-gray-700 mb-6 font-semibold">${story.question}</p>
+
+                            <div class="space-y-3 mb-6">
+                                ${story.options.map((opt, idx) => `
+                                    <button onclick="checkStoryQuiz(${idx}, ${story.answer})" class="btn-bouncy w-full bg-teal-50 hover:bg-teal-100 border-2 border-teal-300 text-teal-900 font-bold py-4 px-6 rounded-2xl text-xl shadow-sm">
+                                        ${opt}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const text = story.pages[currentPage];
+                const isLastPage = currentPage === story.pages.length - 1;
+
+                container.innerHTML = `
+                    <div class="w-full max-w-xl bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-300 text-center">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full font-bold text-xs">Halaman ${currentPage + 1} / ${story.pages.length}</span>
+                            <span class="text-4xl">${story.cover}</span>
+                        </div>
+
+                        <h3 class="text-xl font-bold text-teal-700 mb-4">${story.title}</h3>
+                        <p class="text-xl text-gray-800 leading-relaxed font-semibold mb-8 min-h-[100px] flex items-center justify-center">${text}</p>
+
+                        <div class="flex justify-between items-center">
+                            <button onclick="prevStoryPage()" class="btn-bouncy bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-2xl shadow-sm">
+                                ⬅️ Sebelum
+                            </button>
+                            <button onclick="nextStoryPage()" class="btn-bouncy bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg">
+                                ${isLastPage ? 'Selesai 🌟' : 'Seterusnya ➡️'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                audioManager.speak(text);
+            }
+
+            window.nextStoryPage = () => {
+                audioManager.playClick();
+                if (currentPage < story.pages.length - 1) {
+                    currentPage++;
+                    renderPageContent();
+                } else {
+                    viewingQuiz = true;
+                    renderPageContent();
+                }
+            };
+
+            window.prevStoryPage = () => {
+                audioManager.playClick();
+                if (currentPage > 0) {
+                    currentPage--;
+                    renderPageContent();
+                }
+            };
+
+            window.checkStoryQuiz = (selected, correct) => {
+                if (selected === correct) {
+                    audioManager.playCorrect();
+                    state.addScore(20);
+                    showModal('⭐', 'TAHNIAH!', 'Jawapan kamu betul! Kamu memahami cerita ini dengan sangat baik.', () => {
+                        router.navigate('stories');
+                    });
+                } else {
+                    audioManager.playWrong();
+                    showModal('🤔', 'Cuba Lagi!', 'Cuba baca sekali lagi dan pilih jawapan yang tepat.');
+                }
+            };
+
+            renderPageContent();
+        }
+
+        // --- VIEW 11: PROGRES SAYA (MY PROGRESS) ---
+        function renderProgressView() {
+            return `
+                <div class="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl border-4 border-teal-200 text-center">
+                    <div class="text-6xl mb-2">⭐</div>
+                    <h2 class="text-3xl font-bold text-teal-700 mb-1">PROGRES SAYA</h2>
+                    <p class="text-gray-500 text-sm mb-6">Hebat, teruskan usaha cemerlang kamu!</p>
+
+                    <div class="space-y-4 text-left mb-8 bg-teal-50 p-6 rounded-2xl border border-teal-200">
+                        <div class="flex justify-between items-center font-bold text-teal-900">
+                            <span>Nama Pemain:</span>
+                            <span class="text-teal-700">${state.username}</span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold text-teal-900">
+                            <span>Tahap Kemajuan:</span>
+                            <span class="text-teal-700">Tahap ${state.level}</span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold text-teal-900">
+                            <span>Jumlah Markah:</span>
+                            <span class="text-emerald-600">${state.score}</span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold text-teal-900">
+                            <span>Jumlah Bintang:</span>
+                            <span class="text-amber-500">⭐ ${state.stars}</span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold text-teal-900">
+                            <span>Skor Tertinggi:</span>
+                            <span class="text-indigo-600">${state.highestScore}</span>
+                        </div>

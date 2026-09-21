@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOM Matematik 5–7</title>
+<style>
+:root{
+  --teal:#159a9c; --teal2:#0f7779; --cream:#fffaf0; --pink:#f7b6c8;
+  --yellow:#ffd96a; --ink:#263238; --white:#fff; --green:#45b97c; --red:#e66b6b;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#e9fbf8,#fff7e6);color:var(--ink);min-height:100vh}
+button,input{font:inherit}
+.app{max-width:1050px;margin:auto;padding:18px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.logo{font-size:1.45rem;font-weight:900;color:var(--teal2)}
+.scorebox{background:#fff;border-radius:18px;padding:10px 15px;box-shadow:0 5px 18px #00000012;font-weight:800}
+.screen{display:none}.screen.active{display:block}
+.card{background:#fff;border-radius:28px;padding:28px;box-shadow:0 12px 35px #00000012}
+.hero{text-align:center;padding:45px 25px}
+.hero h1{font-size:clamp(2rem,5vw,3.4rem);margin:5px 0;color:var(--teal2)}
+.hero p{font-size:1.1rem;line-height:1.6}
+.mascot{font-size:4.5rem}
+input{width:100%;padding:14px 16px;border:2px solid #d9e7e5;border-radius:14px;outline:none}
+input:focus{border-color:var(--teal)}
+.btn{border:0;border-radius:15px;padding:13px 20px;font-weight:900;cursor:pointer;transition:.15s;box-shadow:0 4px 0 #00000014}
+.btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(2px)}
+.primary{background:var(--teal);color:#fff}.secondary{background:#edf7f6;color:var(--teal2)}
+.yellow{background:var(--yellow);color:#654f00}.pink{background:var(--pink);color:#6c3042}
+.danger{background:#f4dddd;color:#9a3333}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px}
+.menu-card{padding:22px;border-radius:22px;background:var(--cream);border:2px solid #f1e8d5;text-align:center;cursor:pointer}
+.menu-card .icon{font-size:2.5rem}.menu-card h3{margin:10px 0 5px}
+.menu-card p{font-size:.9rem;line-height:1.45}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+.question{font-size:clamp(2rem,7vw,4rem);text-align:center;font-weight:900;margin:25px 0}
+.progress{height:12px;background:#e8eeee;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:var(--teal);width:0;transition:.3s}
+.option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:720px;margin:auto}
+.option{background:#fff;border:3px solid #dfeceb;border-radius:18px;padding:18px;font-size:1.25rem;font-weight:900;cursor:pointer}
+.option:hover{border-color:var(--teal);background:#f2fffd}
+.option.correct{background:#dcf8e9;border-color:var(--green)} .option.wrong{background:#ffe2e2;border-color:var(--red)}
+.feedback{text-align:center;min-height:34px;font-weight:900;margin:15px}
+.flash-number{font-size:7rem;font-weight:900;text-align:center;color:var(--teal2)}
+.spell-word{font-size:2.4rem;font-weight:900;text-align:center;margin:25px 0}
+.result{text-align:center}.stars{font-size:2.6rem}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:15px;overflow:hidden}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left}th{background:#edf7f6}
+.badge{display:inline-block;background:#fff2bf;padding:6px 10px;border-radius:999px;font-weight:800;margin:3px}
+.small{font-size:.88rem;color:#607277}
+@media(max-width:600px){.app{padding:10px}.card{padding:20px}.hero{padding:30px 15px}.topbar{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">🔢 JOM Matematik 5–7</div>
+    <div class="scorebox">⭐ <span id="topScore">0</span></div>
+  </div>
+
+  <section id="home" class="screen active">
+    <div class="card hero">
+      <div class="mascot">🧮✨</div>
+      <h1>JOM Matematik!</h1>
+      <p>Belajar nombor, tambah, tolak, bandingkan nombor dan ejaan nombor sambil bermain.</p>
+      <div style="max-width:430px;margin:20px auto">
+        <input id="username" placeholder="Masukkan nama pemain" maxlength="20">
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="startApp()">MULA BERMAIN</button>
+        <button class="btn secondary" onclick="show('flash')">FLASHCARD 1–100</button>
+        <button class="btn yellow" onclick="showScoreboard()">🏆 PAPAN SKOR</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu" class="screen">
+    <div class="card">
+      <h2>Hai, <span id="playerName">Pemain</span>! 👋</h2>
+      <p>Pilih aktiviti Matematik.</p>
+      <div class="grid">
+        <div class="menu-card" onclick="startQuiz('addition')"><div class="icon">➕</div><h3>Tambah</h3><p>Tambah nombor mudah.</p></div>
+        <div class="menu-card" onclick="startQuiz('subtraction')"><div class="icon">➖</div><h3>Tolak</h3><p>Tolak nombor tanpa jawapan negatif.</p></div>
+        <div class="menu-card" onclick="startQuiz('compare')"><div class="icon">⚖️</div><h3>Banding Nombor</h3><p>Pilih nombor yang lebih besar.</p></div>
+        <div class="menu-card" onclick="startQuiz('sequence')"><div class="icon">🔢</div><h3>Susun Nombor</h3><p>Cari nombor yang hilang.</p></div>
+        <div class="menu-card" onclick="startQuiz('mixed')"><div class="icon">🎯</div><h3>Campur Semua</h3><p>Soalan pelbagai kemahiran.</p></div>
+        <div class="menu-card" onclick="startSpelling()"><div class="icon">🔤</div><h3>Ejaan Nombor</h3><p>Taip ejaan nombor dalam Bahasa Melayu.</p></div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" onclick="show('flash')">Flashcard</button>
+        <button class="btn yellow" onclick="showScoreboard()">Papan Skor</button>
+        <button class="btn danger" onclick="show('home')">Home</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="quiz" class="screen">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px">
+        <b id="quizTitle">Kuiz</b><b>Soalan <span id="qNum">1</span>/10</b>
+      </div>
+      <div class="progress" style="margin-top:12px"><div id="bar"></div></div>
+      <div id="question" class="question"></div>
+      <div id="options" class="option-grid"></div>
+      <div id="feedback" class="feedback"></div>
+      <div class="actions">
+        <button id="nextBtn" class="btn primary" style="display:none" onclick="nextQuestion()">Soalan Seterusnya →</button>
+        <button class="btn secondary" onclick="show('menu')">Keluar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="spelling" class="screen">
+    <div class="card">
+      <h2 style="text-align:center">🔤 Ejaan Nombor</h2>
+      <p class="small" style="text-align:center">Taip perkataan Bahasa Melayu yang betul.</p>
+      <div id="spellNumber" class="spell-word"></div>
+      <div style="max-width:520px;margin:auto">
+        <input id="spellInput" placeholder="Contoh: dua puluh lima" autocomplete="off">
+      </div>
+      <div id="spellFeedback" class="feedback"></div>
+      <div class="actions">
+        <button class="btn primary" onclick="checkSpelling()">SEMAK</button>
+        <button id="spellNext" class="btn yellow" style="display:none" onclick="nextSpelling()">NOMBOR SETERUSNYA →</button>
+        <button class="btn secondary" onclick="show('menu')">Keluar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="flash" class="screen">
+    <div class="card">
+      <h2 style="text-align:center">🃏 Flashcard Nombor 1–100</h2>
+      <div id="flashNumber" class="flash-number">1</div>
+      <div id="flashWord" style="text-align:center;font-size:1.3rem;font-weight:800"></div>
+      <div class="actions">
+        <button class="btn secondary" onclick="flashPrev()">← Sebelum</button>
+        <button class="btn primary" onclick="flashSpeak()">🔊 Sebut</button>
+        <button class="btn secondary" onclick="flashNext()">Seterusnya →</button>
+        <button class="btn danger" onclick="show('menu')">Kembali</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="result" class="screen">
+    <div class="card result">
+      <div style="font-size:4rem">🎉</div>
+      <h2>Tahniah, <span id="resultName"></span>!</h2>
+      <div id="resultStars" class="stars"></div>
+      <h1><span id="finalScore">0</span> / 100</h1>
+      <p id="resultText"></p>
+      <div class="actions">
+        <button class="btn primary" onclick="repeatQuiz()">MAIN LAGI</button>
+        <button class="btn yellow" onclick="showScoreboard()">🏆 PAPAN SKOR</button>
+        <button class="btn secondary" onclick="show('menu')">MENU</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scoreboard" class="screen">
+    <div class="card">
+      <h2>🏆 Papan Skor</h2>
+      <div id="scoreTable"></div>
+      <div class="actions">
+        <button class="btn primary" onclick="show('menu')">MENU</button>
+        <button class="btn danger" onclick="clearScores()">Padam Skor</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let state={name:'',score:0,q:0,correct:0,type:'mixed',lastType:'mixed',spellIndex:0,spellDone:false,flash:1};
+let scores=JSON.parse(localStorage.getItem('jom_math_scores')||'[]');
+
+const ones=['','satu','dua','tiga','empat','lima','enam','tujuh','lapan','sembilan','sepuluh','sebelas','dua belas','tiga belas','empat belas','lima belas','enam belas','tujuh belas','lapan belas','sembilan belas'];
+function numWord(n){
+  if(n<20)return ones[n];
+  if(n<100){let t=Math.floor(n/10),u=n%10;return ones[t]+' puluh'+(u?' '+ones[u]:'');}
+  if(n===100)return 'seratus';
+  return String(n);
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  $(id).classList.add('active');
+  if(id==='flash')renderFlash();
+  $('topScore').textContent=state.score;
+}
+function startApp(){
+  const n=$('username').value.trim();
+  if(!n){alert('Sila masukkan nama pemain dahulu.');return;}
+  state.name=n;$('playerName').textContent=n;saveUser();show('menu');
+}
+function saveUser(){localStorage.setItem('jom_math_user',state.name)}
+function loadUser(){let n=localStorage.getItem('jom_math_user');if(n){state.name=n;$('username').value=n;$('playerName').textContent=n}}
+loadUser();
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function makeQuestion(type){
+  let a,b,ans,opts,text;
+  if(type==='addition'){a=rand(1,20);b=rand(1,20);ans=a+b;text=`${a} + ${b} = ?`;}
+  if(type==='subtraction'){a=rand(5,30);b=rand(1,a);ans=a-b;text=`${a} − ${b} = ?`;}
+  if(type==='compare'){a=rand(1,100);b=rand(1,100);ans=Math.max(a,b);text=`Nombor manakah lebih besar?<br><br>${a} atau ${b}`;}
+  if(type==='sequence'){let start=rand(1,70),step=rand(1,5),pos=rand(1,3);let arr=[0,1,2,3].map(i=>start+i*step);ans=arr[pos];arr[pos]='?';text=arr.join(' , ')+' = ?';}
+  if(type==='mixed'){return makeQuestion(['addition','subtraction','compare','sequence'][rand(0,3)]);}
+  opts=new Set([ans]);
+  while(opts.size<4){let x=ans+rand(-10,10);if(x>=0&&x<=100)opts.add(x);}
+  opts=[...opts].sort(()=>Math.random()-.5);
+  return {text,ans,opts};
+}
+let current=null;
+function startQuiz(type){
+  state.type=type;state.lastType=type;state.q=0;state.correct=0;state.score=0;
+  $('quizTitle').textContent={addition:'➕ Tambah',subtraction:'➖ Tolak',compare:'⚖️ Banding Nombor',sequence:'🔢 Susun Nombor',mixed:'🎯 Campur Semua'}[type];
+  show('quiz');renderQuestion();
+}
+function renderQuestion(){
+  current=makeQuestion(state.type);state.q++;
+  $('qNum').textContent=state.q;$('bar').style.width=((state.q-1)/10*100)+'%';
+  $('question').innerHTML=current.text;$('feedback').textContent='';$('nextBtn').style.display='none';
+  $('options').innerHTML='';
+  current.opts.forEach(o=>{
+    let b=document.createElement('button');b.className='option';b.textContent=o;
+    b.onclick=()=>answerQuiz(b,o);$('options').appendChild(b);
+  });
+}
+function answerQuiz(btn,val){
+  document.querySelectorAll('.option').forEach(x=>x.disabled=true);
+  if(val===current.ans){
+    btn.classList.add('correct');state.correct++;state.score+=10;$('feedback').textContent='✅ Betul! Hebat!';
+  }else{
+    btn.classList.add('wrong');$('feedback').textContent='❌ Cuba lagi! Jawapan: '+current.ans;
+    document.querySelectorAll('.option').forEach(x=>{if(Number(x.textContent)===current.ans)x.classList.add('correct')});
+  }
+  $('topScore').textContent=state.score;$('nextBtn').style.display='inline-block';
+}
+function nextQuestion(){if(state.q>=10){finishQuiz();}else{renderQuestion()}}
+function finishQuiz(){
+  $('bar').style.width='100%';$('finalScore').textContent=state.score;$('resultName').textContent=state.name;
+  let stars=state.correct>=9?'⭐⭐⭐':state.correct>=6?'⭐⭐':'⭐';
+  $('resultStars').textContent=stars;
+  $('resultText').textContent=`${state.correct} daripada 10 soalan betul. Teruskan berlatih!`;
+  scores.push({name:state.name,score:state.score,type:state.lastType,date:new Date().toLocaleDateString('ms-MY')});
+  scores.sort((a,b)=>b.score-a.score);scores=scores.slice(0,20);localStorage.setItem('jom_math_scores',JSON.stringify(scores));
+  show('result');
+}
+function repeatQuiz(){startQuiz(state.lastType)}
+
+function startSpelling(){
+  state.spellIndex=0;state.spellDone=false;show('spelling');renderSpelling();
+}
+function renderSpelling(){
+  const n=rand(1,100);state.spellNumber=n;
+  $('spellNumber').textContent=n;$('spellInput').value='';$('spellFeedback').textContent='';$('spellNext').style.display='none';
+  $('spellInput').focus();
+}
+function checkSpelling(){
+  const answer=$('spellInput').value.trim().toLowerCase().replace(/\s+/g,' ');
+  const correct=numWord(state.spellNumber);
+  if(answer===correct){
+    state.score+=10;$('topScore').textContent=state.score;$('spellFeedback').textContent='✅ Betul! '+correct;
+    $('spellNext').style.display='inline-block';
+  }else{
+    $('spellFeedback').textContent='❌ Belum tepat. Cuba lagi.';
+  }
+}
+function nextSpelling(){renderSpelling()}
+
+function renderFlash(){
+  $('flashNumber').textContent=state.flash;
+  $('flashWord').textContent=numWord(state.flash);
+}
+function flashNext(){state.flash=state.flash>=100?1:state.flash+1;renderFlash()}
+function flashPrev(){state.flash=state.flash<=1?100:state.flash-1;renderFlash()}
+function flashSpeak(){
+  if('speechSynthesis' in window){
+    speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(numWord(state.flash));u.lang='ms-MY';speechSynthesis.speak(u);
+  }
+}
+function showScoreboard(){
+  let rows=scores.length?scores.map((s,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(s.name)}</td><td>${s.score}</td><td>${escapeHtml(s.type)}</td><td>${s.date}</td></tr>`).join(''):'<tr><td colspan="5">Belum ada skor.</td></tr>';
+  $('scoreTable').innerHTML=`<table><thead><tr><th>#</th><th>Pemain</th><th>Skor</th><th>Aktiviti</th><th>Tarikh</th></tr></thead><tbody>${rows}</tbody></table>`;
+  show('scoreboard');
+}
+function clearScores(){if(confirm('Padam semua skor?')){scores=[];localStorage.removeItem('jom_math_scores');showScoreboard()}}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+$('spellInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkSpelling()});
+</script>
+</body>
+</html>
